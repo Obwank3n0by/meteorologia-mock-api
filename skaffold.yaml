@@ -1,0 +1,45 @@
+apiVersion: skaffold/v4beta7
+kind: Config
+metadata:
+  name: meteorologia-mock-api
+build:
+  artifacts:
+  - image: meteorologia-mock-api
+    docker:
+      dockerfile: Dockerfile
+    custom:
+      buildCommand: ./mvnw clean package -DskipTests -Dquarkus.package.type=fast-jar
+manifests:
+  rawYaml:
+  - openshift-configmap.yaml
+  - openshift-deployment.yaml
+  - openshift-service.yaml
+deploy:
+  kubectl:
+    flags:
+      global: ["--namespace=default"]
+profiles:
+- name: dev
+  build:
+    artifacts:
+    - image: meteorologia-mock-api
+      docker:
+        dockerfile: Dockerfile
+      sync:
+        manual:
+        - src: "target/quarkus-app/**"
+          dest: "/deployments"
+  deploy:
+    kubectl:
+      flags:
+        global: ["--namespace=meteorologia-dev"]
+- name: prod
+  build:
+    artifacts:
+    - image: meteorologia-mock-api
+      docker:
+        dockerfile: Dockerfile
+  deploy:
+    kubectl:
+      flags:
+        global: ["--namespace=meteorologia-prod"]

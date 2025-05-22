@@ -1,0 +1,169 @@
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: meteorologia-mock-api-metrics
+  labels:
+    app: meteorologia-mock-api
+    monitoring: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: meteorologia-mock-api
+  endpoints:
+  - port: http
+    path: /q/metrics
+    interval: 30s
+    scrapeTimeout: 10s
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: meteorologia-mock-api-metrics
+  labels:
+    app: meteorologia-mock-api
+    monitoring: prometheus
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8080"
+    prometheus.io/path: "/q/metrics"
+spec:
+  selector:
+    app: meteorologia-mock-api
+  ports:
+  - name: metrics
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: meteorologia-mock-api-alerts
+  labels:
+    app: meteorologia-mock-api
+    prometheus: kube-prometheus
+    role: alert-rules
+spec:
+  groups:
+  - name: meteorologia-mock-api.rules
+    rules:
+    - alert: MeteorologiaAPIDown
+      expr: up{job="meteorologia-mock-api"} == 0
+      for: 5m
+      labels:
+        severity: critical
+        service: meteorologia-mock-api
+      annotations:
+        summary: "Meteorología Mock API is down"
+        description: "Meteorología Mock API has been down for more than 5 minutes."
+    
+    - alert: MeteorologiaAPIHighLatency
+      expr: histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{job="meteorologia-mock-api"}[5m])) > 0.5
+      for: 10m
+      labels:
+        severity: warning
+        service: meteorologia-mock-api
+      annotations:
+        summary: "High latency on Meteorología Mock API"
+        description: "95% of requests are taking more than 500ms to complete."
+    
+    - alert: MeteorologiaAPIHighErrorRate
+      expr: rate(http_server_requests_total{job="meteorologia-mock-api",status=~"5.."}[5m]) > 0.1
+      for: 5m
+      labels:
+        severity: warning
+        service: meteorologia-mock-api
+      annotations:
+        summary: "High error rate on Meteorología Mock API"
+        description: "Error rate is above 10% for the last 5 minutes."
+    
+    - alert: MeteorologiaAPIHighMemoryUsage
+      expr: container_memory_usage_bytes{pod=~"meteorologia-mock-api-.*"} / container_spec_memory_limit_bytes > 0.8
+      for: 10m
+      labels:
+        severity: warning
+        service: meteorologia-mock-api
+      annotations:
+        summary: "High memory usage on Meteorología Mock API"
+        description: "Memory usage is above 80% for more than 10 minutes."
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard-meteorologia
+  labels:
+    app: meteorologia-mock-api
+    grafana_dashboard: "1"
+data:
+  dashboard.json: |
+    {
+      "dashboard": {
+        "id": null,
+        "title": "Meteorología Mock API Dashboard",
+        "tags": ["meteorologia", "api", "quarkus"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "id": 1,
+            "title": "Request Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(http_server_requests_total{job=\"meteorologia-mock-api\"}[5m])",
+                "legendFormat": "{{method}} {{uri}}"
+              }
+            ],
+            "yAxes": [{"label": "Requests/sec"}],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+          },
+          {
+            "id": 2,
+            "title": "Response Times",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "histogram_quantile(0.95, rate(http_server_requests_seconds_bucket{job=\"meteorologia-mock-api\"}[5m]))",
+                "legendFormat": "95th percentile"
+              },
+              {
+                "expr": "histogram_quantile(0.50, rate(http_server_requests_seconds_bucket{job=\"meteorologia-mock-api\"}[5m]))",
+                "legendFormat": "Median"
+              }
+            ],
+            "yAxes": [{"label": "Seconds"}],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+          },
+          {
+            "id": 3,
+            "title": "Error Rate",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "rate(http_server_requests_total{job=\"meteorologia-mock-api\",status=~\"4..|5..\"}[5m])",
+                "legendFormat": "Error Rate"
+              }
+            ],
+            "yAxes": [{"label": "Errors/sec"}],
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+          },
+          {
+            "id": 4,
+            "title": "Memory Usage",
+            "type": "graph",
+            "targets": [
+              {
+                "expr": "container_memory_usage_bytes{pod=~\"meteorologia-mock-api-.*\"} / 1024 / 1024",
+                "legendFormat": "Memory Usage (MB)"
+              }
+            ],
+            "yAxes": [{"label": "MB"}],
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+          }
+        ],
+        "time": {"from": "now-1h", "to": "now"},
+        "refresh": "30s"
+      }
+    }

@@ -1,0 +1,26 @@
+*
+!target/quarkus-app/lib/
+!target/quarkus-app/*.jar
+!target/quarkus-app/app/
+!target/quarkus-app/quarkus/
+
+# Directorios a excluir
+.git
+.github
+.mvn
+.vscode
+.idea
+node_modules
+src
+docs
+
+# Archivos a excluir
+*.md
+*.txt
+.gitignore
+.dockerignore
+Dockerfile*
+pom.xml
+mvnw*
+*.log
+*.tmp

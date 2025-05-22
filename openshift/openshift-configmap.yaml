@@ -1,0 +1,44 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: meteorologia-mock-api-config
+  labels:
+    app: meteorologia-mock-api
+    app.kubernetes.io/name: meteorologia-mock-api
+data:
+  application.properties: |
+    # Configuración del puerto
+    quarkus.http.port=8080
+    quarkus.http.host=0.0.0.0
+
+    # Configuración OpenAPI
+    quarkus.smallrye-openapi.info-title=Meteorología Mock API
+    quarkus.smallrye-openapi.info-version=1.0.0
+    quarkus.smallrye-openapi.info-description=API Mock para servicios meteorológicos con datos simulados
+    quarkus.smallrye-openapi.info-terms-of-service=http://meteorologia.example.com/terms/
+    quarkus.smallrye-openapi.info-contact-email=support@meteorologia.example.com
+    quarkus.smallrye-openapi.info-contact-name=Equipo de Meteorología
+    quarkus.smallrye-openapi.info-contact-url=http://meteorologia.example.com/contact
+    quarkus.smallrye-openapi.info-license-name=Apache 2.0
+    quarkus.smallrye-openapi.info-license-url=https://www.apache.org/licenses/LICENSE-2.0.html
+
+    # Swagger UI
+    quarkus.swagger-ui.always-include=true
+    quarkus.swagger-ui.path=/swagger-ui
+
+    # CORS
+    quarkus.http.cors=true
+    quarkus.http.cors.origins=*
+
+    # Logging
+    quarkus.log.level=INFO
+    quarkus.log.category."com.meteorologia".level=INFO
+    quarkus.log.console.enable=true
+    quarkus.log.console.format=%d{HH:mm:ss} %-5p [%c{2.}] (%t) %s%e%n
+
+    # Health checks
+    quarkus.smallrye-health.root-path=/q/health
+
+    # Metrics
+    quarkus.micrometer.enabled=true
+    quarkus.micrometer.export.prometheus.enabled=true
