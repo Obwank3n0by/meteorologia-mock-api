@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# Script de ejecución personalizado para S2I
+# Este script se ejecuta cuando inicia el contenedor
+
+set -e
+
+echo "🚀 Iniciando aplicación Meteorología Mock API..."
+
+# Verificar que los artefactos existen
+if [ ! -f "/deployments/quarkus-run.jar" ]; then
+    echo "❌ Error: No se encontró quarkus-run.jar"
+    echo "Contenido de /deployments:"
+    ls -la /deployments/
+    exit 1
+fi
+
+echo "✅ Artefactos encontrados correctamente"
+
+# Configurar variables de entorno para Quarkus
+export QUARKUS_HTTP_HOST=0.0.0.0
+export QUARKUS_HTTP_PORT=8080
+export JAVA_APP_JAR=/deployments/quarkus-run.jar
+
+# Configurar locale para evitar warnings
+export LANG=C.UTF-8
+export LC_ALL=C.UTF-8
+
+# Configurar opciones de JVM optimizadas para contenedores
+export JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 \
+                         -Djava.util.logging.manager=org.jboss.logmanager.LogManager \
+                         -XX:+UseParallelGC \
+                         -XX:MinHeapFreeRatio=10 \
+                         -XX:MaxHeapFreeRatio=20 \
+                         -XX:GCTimeRatio=4 \
+                         -XX:AdaptiveSizePolicyWeight=90 \
+                         -XX:+ExitOnOutOfMemoryError"
+
+echo "🎯 Configuración de la aplicación:"
+echo "   JAVA_APP_JAR: $JAVA_APP_JAR"
+echo "   QUARKUS_HTTP_HOST: $QUARKUS_HTTP_HOST"
+echo "   QUARKUS_HTTP_PORT: $QUARKUS_HTTP_PORT"
+
+echo "🚀 Ejecutando aplicación..."
+
+# Ejecutar el script de run base con nuestro JAR configurado
+exec /opt/jboss/container/java/run/run-java.sh

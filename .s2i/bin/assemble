@@ -1,0 +1,64 @@
+#!/bin/bash
+
+# Script de ensamblaje personalizado para S2I
+# Este script se ejecuta durante el build para compilar y copiar los artefactos correctamente
+
+set -e
+
+echo "🔨 Iniciando proceso de ensamblaje personalizado..."
+
+# Ejecutar el script de ensamblaje base de la imagen
+echo "📦 Ejecutando ensamblaje base..."
+/usr/local/s2i/assemble
+
+echo "🏗️  Verificando estructura después del build base..."
+ls -la /tmp/src/
+ls -la /tmp/src/target/ 2>/dev/null || echo "Directorio target no encontrado"
+
+# Verificar que el build de Maven fue exitoso
+if [ ! -d "/tmp/src/target" ]; then
+    echo "❌ Error: No se encontró directorio target"
+    exit 1
+fi
+
+if [ ! -d "/tmp/src/target/quarkus-app" ]; then
+    echo "❌ Error: No se encontró directorio quarkus-app"
+    echo "Contenido de target/:"
+    ls -la /tmp/src/target/
+    exit 1
+fi
+
+echo "✅ Build de Maven exitoso, copiando artefactos..."
+
+# Limpiar directorio de deployments
+rm -rf /deployments/*
+
+# Copiar artefactos de Quarkus al directorio de deployments
+echo "📋 Copiando lib/..."
+cp -r /tmp/src/target/quarkus-app/lib /deployments/
+
+echo "📋 Copiando quarkus/..."
+cp -r /tmp/src/target/quarkus-app/quarkus /deployments/
+
+echo "📋 Copiando app/..."
+cp -r /tmp/src/target/quarkus-app/app /deployments/
+
+echo "📋 Copiando JARs principales..."
+cp /tmp/src/target/quarkus-app/*.jar /deployments/
+
+# Configurar variable JAVA_APP_JAR para que apunte al JAR correcto
+echo "⚙️  Configurando JAVA_APP_JAR..."
+echo "JAVA_APP_JAR=/deployments/quarkus-run.jar" > /deployments/.s2i_env
+
+# Ajustar permisos
+echo "🔒 Ajustando permisos..."
+chown -R 185:0 /deployments
+chmod -R g+rw /deployments
+
+echo "📊 Verificando resultado final..."
+ls -la /deployments/
+echo ""
+echo "📋 Archivos JAR encontrados:"
+find /deployments -name "*.jar" -type f
+
+echo "✅ Ensamblaje completado exitosamente"
