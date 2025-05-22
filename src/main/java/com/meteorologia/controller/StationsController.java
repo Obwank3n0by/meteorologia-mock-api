@@ -129,6 +129,54 @@ public class StationsController {
             description = "Error interno del servidor"
         )
     })
+    public Response getStationsByCity(
+        @Parameter(
+            description = "Nombre de la ciudad a buscar",
+            required = true,
+            example = "Madrid"
+        )
+        @PathParam("city") String city) {
+        
+        try {
+            if (city == null || city.trim().isEmpty()) {
+                return Response.status(Response.Status.BAD_REQUEST)
+                    .entity("{\"error\": \"El nombre de la ciudad es requerido\"}")
+                    .build();
+            }
+            
+            List<WeatherStation> stations = weatherService.getStationsByCity(city);
+            return Response.ok(stations).build();
+        } catch (Exception e) {
+            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
+                .entity("{\"error\": \"Error interno del servidor\"}")
+                .build();
+        }
+    }
+
+    @GET
+    @Path("/search/country/{country}")
+    @Operation(
+        summary = "Buscar estaciones por país",
+        description = "Retorna todas las estaciones meteorológicas de un país específico"
+    )
+    @APIResponses({
+        @APIResponse(
+            responseCode = "200",
+            description = "Estaciones encontradas exitosamente",
+            content = @Content(
+                mediaType = MediaType.APPLICATION_JSON,
+                schema = @Schema(implementation = WeatherStation.class, type = Schema.SchemaType.ARRAY)
+            )
+        ),
+        @APIResponse(
+            responseCode = "400",
+            description = "Parámetros inválidos"
+        ),
+        @APIResponse(
+            responseCode = "500",
+            description = "Error interno del servidor"
+        )
+    })
     public Response getStationsByCountry(
         @Parameter(
             description = "Nombre del país a buscar",
@@ -383,51 +431,3 @@ public class StationsController {
         return R * c;
     }
 }
-            content = @Content(
-                mediaType = MediaType.APPLICATION_JSON,
-                schema = @Schema(implementation = WeatherStation.class, type = Schema.SchemaType.ARRAY)
-            )
-        ),
-        @APIResponse(
-            responseCode = "400",
-            description = "Parámetros inválidos"
-        ),
-        @APIResponse(
-            responseCode = "500",
-            description = "Error interno del servidor"
-        )
-    })
-    public Response getStationsByCity(
-        @Parameter(
-            description = "Nombre de la ciudad a buscar",
-            required = true,
-            example = "Madrid"
-        )
-        @PathParam("city") String city) {
-        
-        try {
-            if (city == null || city.trim().isEmpty()) {
-                return Response.status(Response.Status.BAD_REQUEST)
-                    .entity("{\"error\": \"El nombre de la ciudad es requerido\"}")
-                    .build();
-            }
-            
-            List<WeatherStation> stations = weatherService.getStationsByCity(city);
-            return Response.ok(stations).build();
-        } catch (Exception e) {
-            return Response.status(Response.Status.INTERNAL_SERVER_ERROR)
-                .entity("{\"error\": \"Error interno del servidor\"}")
-                .build();
-        }
-    }
-
-    @GET
-    @Path("/search/country/{country}")
-    @Operation(
-        summary = "Buscar estaciones por país",
-        description = "Retorna todas las estaciones meteorológicas de un país específico"
-    )
-    @APIResponses({
-        @APIResponse(
-            responseCode = "200",
-            description = "Estaciones encontradas exitosamente",
