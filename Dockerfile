@@ -1,29 +1,52 @@
+# Dockerfile para OpenShift Source-to-Image (S2I)
+# Este Dockerfile funciona con el proceso S2I de OpenShift donde Maven se ejecuta automáticamente
+
 FROM registry.access.redhat.com/ubi8/openjdk-17:1.18
 
-ENV LANGUAGE='en_US:en'
-
-# Configuración del usuario para OpenShift
-USER root
-RUN chown 185 /deployments && chmod "g+rwX" /deployments && chown 185:root /deployments
-USER 185
-
-# Copiar archivos de la aplicación
-COPY --chown=185 target/quarkus-app/lib/ /deployments/lib/
-COPY --chown=185 target/quarkus-app/*.jar /deployments/
-COPY --chown=185 target/quarkus-app/app/ /deployments/app/
-COPY --chown=185 target/quarkus-app/quarkus/ /deployments/quarkus/
-
-# Configuración de la aplicación
-EXPOSE 8080
-ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
-ENV JAVA_APP_JAR="/deployments/quarkus-run.jar"
-
-# Etiquetas para OpenShift
+# Metadatos para OpenShift
 LABEL name="meteorologia-mock-api" \
       version="1.0.0" \
       architecture="x86_64" \
-      summary="API Mock de Meteorología" \
-      description="Microservicio mock para datos meteorológicos desarrollado con Quarkus" \
-      maintainer="Equipo de Desarrollo <dev@example.com>"
+      summary="API Mock de Meteorología desarrollada con Quarkus" \
+      description="Microservicio mock para datos meteorológicos que proporciona endpoints REST para desarrollo y testing" \
+      maintainer="Equipo de Desarrollo <dev@example.com>" \
+      io.k8s.description="API Mock de Meteorología con Quarkus" \
+      io.k8s.display-name="Meteorología Mock API" \
+      io.openshift.expose-services="8080:http" \
+      io.openshift.tags="java,quarkus,api,mock,meteorologia"
 
-ENTRYPOINT [ "/opt/jboss/container/java/run/run-java.sh" ]
+# Variables de entorno
+ENV LANGUAGE='en_US:en' \
+    LANG='en_US.UTF-8' \
+    LC_ALL='en_US.UTF-8'
+
+# Configuración específica de Quarkus para OpenShift
+ENV QUARKUS_HTTP_HOST=0.0.0.0 \
+    QUARKUS_HTTP_PORT=8080
+
+# Configuración optimizada de JVM para contenedores
+ENV JAVA_OPTS_APPEND="-Dquarkus.http.host=0.0.0.0 \
+                      -Djava.util.logging.manager=org.jboss.logmanager.LogManager \
+                      -XX:+UseParallelGC \
+                      -XX:MinHeapFreeRatio=10 \
+                      -XX:MaxHeapFreeRatio=20 \
+                      -XX:GCTimeRatio=4 \
+                      -XX:AdaptiveSizePolicyWeight=90 \
+                      -XX:+ExitOnOutOfMemoryError"
+
+# Configuración del usuario para OpenShift (usuario no privilegiado)
+USER root
+
+# Crear directorio de trabajo y configurar permisos para OpenShift
+RUN chown 185:0 /deployments && \
+    chmod "g+rwX" /deployments && \
+    chown 185:0 /deployments
+
+# Cambiar al usuario no privilegiado
+USER 185
+
+# Puerto expuesto
+EXPOSE 8080
+
+# El punto de entrada se maneja automáticamente por la imagen base de OpenJDK
+# Los archivos compilados serán copiados automáticamente por el proceso S2I
