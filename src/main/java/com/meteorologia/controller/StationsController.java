@@ -165,7 +165,7 @@ public class StationsController {
             description = "Estaciones encontradas exitosamente",
             content = @Content(
                 mediaType = MediaType.APPLICATION_JSON,
-                schema = @Schema(implementation = WeatherStation.class, type = Schema.SchemaType.ARRAY)
+                schema = @Schema(implementation = WeatherStation[].class)
             )
         ),
         @APIResponse(
