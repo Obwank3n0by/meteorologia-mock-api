@@ -2,7 +2,6 @@ package com.meteorologia.controller;
 
 import com.meteorologia.model.WeatherData;
 import com.meteorologia.model.WeatherForecast;
-import com.meteorologia.model.WeatherStation;
 import com.meteorologia.service.WeatherService;
 
 import org.eclipse.microprofile.openapi.annotations.Operation;
@@ -149,7 +148,7 @@ public class WeatherController {
             description = "Pronóstico obtenido exitosamente",
             content = @Content(
                 mediaType = MediaType.APPLICATION_JSON,
-                schema = @Schema(implementation = WeatherForecast.class, type = Schema.SchemaType.ARRAY)
+                schema = @Schema(implementation = WeatherForecast[].class)
             )
         ),
         @APIResponse(
@@ -214,7 +213,7 @@ public class WeatherController {
             description = "Pronóstico obtenido exitosamente",
             content = @Content(
                 mediaType = MediaType.APPLICATION_JSON,
-                schema = @Schema(implementation = WeatherForecast.class, type = Schema.SchemaType.ARRAY)
+                schema = @Schema(implementation = WeatherForecast[].class)
             )
         ),
         @APIResponse(
